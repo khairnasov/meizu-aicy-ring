@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Aicy Ring Studio — Meizu 21 Pro RGB Controller</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    body { background: #090b10; color: #f1f5f9; overflow-x: hidden; }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f131d; }
+    ::-webkit-scrollbar-thumb { background: #26304a; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3b4b72; }
+
+    /* Camera Module & Aicy Ring Glow */
+    .phone-back {
+      background: linear-gradient(155deg, #161a26 0%, #0d1018 55%, #131824 100%);
+      box-shadow: 
+        inset 0 1px 2px rgba(255,255,255,0.12),
+        0 20px 50px rgba(0,0,0,0.75);
+    }
+    .camera-lens {
+      background: radial-gradient(circle at 35% 30%, #2a334b 0%, #0d111a 45%, #05070b 85%, #1b2234 100%);
+      box-shadow: 
+        0 6px 16px rgba(0,0,0,0.8),
+        inset 0 2px 4px rgba(255,255,255,0.15);
+    }
+    .lens-glass {
+      background: radial-gradient(circle at 30% 30%, rgba(96, 165, 250, 0.35) 0%, rgba(15, 23, 42, 0.9) 55%, #020408 100%);
+    }
+    .segment-transition {
+      transition: stroke 0.14s ease, filter 0.14s ease, opacity 0.14s ease;
+    }
+    @keyframes startupWave {
+      0% { transform: scale(0.96); opacity: 0.7; }
+      50% { transform: scale(1.04); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .animate-startup {
+      animation: startupWave 0.6s ease-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+  <!-- Top Header -->
+  <header class="sticky top-0 z-30 backdrop-blur-xl bg-[#090b10]/85 border-b border-slate-800/80 px-4 py-3">
+    <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-purple-600 to-pink-500 p-[2px] shadow-lg shadow-purple-500/20">
+          <div class="w-full h-full bg-[#090b10] rounded-[14px] flex items-center justify-center">
+            <span class="w-4 h-4 rounded-full border-2 border-cyan-400 shadow-[0_0_10px_#22d3ee]"></span>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">Aicy Ring Studio</h1>
+            <span class="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">Meizu 21 Pro</span>
+          </div>
+          <p class="text-xs text-slate-400">Управление RGB-кольцом для соцсетей и анимации запуска Gemini (без Root)</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button id="btnTriggerGeminiHeader" type="button" class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-600/25 transition active:scale-95">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C12.8 7.2 16.8 11.2 22 12C16.8 12.8 12.8 16.8 12 22C11.2 16.8 7.2 12.8 2 12C7.2 11.2 11.2 7.2 12 2Z"/>
+          </svg>
+          <span>Запуск Gemini</span>
+        </button>
+        <button id="btnStopRing" type="button" class="px-3 py-2 rounded-xl text-xs sm:text-sm font-medium bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 transition active:scale-95">
+          Стоп
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+    
+    <!-- Left Column: Interactive Meizu 21 Pro Visualizer (5 cols) -->
+    <section class="lg:col-span-5 lg:sticky lg:top-20 flex flex-col gap-4">
+      <div class="phone-back rounded-3xl border border-slate-800/90 p-5 sm:p-6 relative overflow-hidden">
+        <!-- Ambient Backlight Glow -->
+        <div id="ambientBackdrop" class="pointer-events-none absolute -top-16 -left-16 w-72 h-72 rounded-full blur-3xl opacity-25 transition-all duration-300" style="background: radial-gradient(circle, #6366f1, transparent 70%);"></div>
+
+        <div class="flex items-center justify-between mb-4 relative z-10">
+          <div>
+            <span class="text-[11px] uppercase tracking-widest text-slate-400 font-semibold block">Предпросмотр в реальном времени</span>
+            <h2 id="activeModeTitle" class="text-sm sm:text-base font-bold text-white mt-0.5">Анимация запуска Gemini</h2>
+          </div>
+          <span id="ringStatusBadge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+            <span id="ringStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="ringStatusText">Активно</span>
+          </span>
+        </div>
+
+        <!-- Meizu 21 Pro Vertical Camera Array + Aicy Ring -->
+        <div class="relative mx-auto w-full max-w-[290px] py-4 flex flex-col items-center">
+          <div class="w-full rounded-[28px] bg-[#0b0e16]/90 border border-slate-800/80 p-5 flex items-center justify-between gap-4 shadow-inner">
+            
+            <!-- Vertical Camera Stack -->
+            <div class="flex flex-col items-center gap-3.5 pl-2">
+              <!-- Main 50MP Lens -->
+              <div class="w-16 h-16 rounded-full camera-lens p-1.5 flex items-center justify-center border border-slate-700/60">
+                <div class="w-full h-full rounded-full lens-glass flex items-center justify-center">
+                  <div class="w-4 h-4 rounded-full bg-slate-900 border border-slate-700/80 shadow-inner"></div>
+                </div>
+              </div>
+              <!-- Ultrawide 13MP Lens -->
+              <div class="w-16 h-16 rounded-full camera-lens p-1.5 flex items-center justify-center border border-slate-700/60">
+                <div class="w-full h-full rounded-full lens-glass flex items-center justify-center">
+                  <div class="w-3.5 h-3.5 rounded-full bg-slate-900 border border-slate-700/80"></div>
+                </div>
+              </div>
+              <!-- Telephoto 10MP Lens -->
+              <div class="w-16 h-16 rounded-full camera-lens p-1.5 flex items-center justify-center border border-slate-700/60">
+                <div class="w-full h-full rounded-full lens-glass flex items-center justify-center">
+                  <div class="w-3.5 h-3.5 rounded-xl bg-slate-950 border border-slate-700/80"></div>
+                </div>
+              </div>
+
+              <!-- Interactive Aicy Smart Ring (4 RGB Segments + Center Flash) -->
+              <div class="relative w-24 h-24 flex items-center justify-center mt-1" id="aicyRingContainer">
+                <svg class="w-24 h-24 -rotate-45 overflow-visible" viewBox="0 0 120 120">
+                  <defs>
+                    <filter id="glowFilter" x="-50%" y="-50%" width="200%" height="200%">
+                      <feGaussianBlur stdDeviation="5" result="blur" />
+                      <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  <!-- Dark Ring Track -->
+                  <circle cx="60" cy="60" r="38" fill="none" stroke="#1a2030" stroke-width="12" />
+                  
+                  <!-- 4 Quadrants of Aicy Ring (circumference = 2 * pi * 38 ≈ 238.76, each quadrant ~52 with 7.7 gap) -->
+                  <circle id="seg0" class="segment-transition cursor-pointer" cx="60" cy="60" r="38" fill="none" stroke="#4285F4" stroke-width="12" stroke-linecap="round" stroke-dasharray="50 188.76" stroke-dashoffset="0" filter="url(#glowFilter)" />
+                  <circle id="seg1" class="segment-transition cursor-pointer" cx="60" cy="60" r="38" fill="none" stroke="#9B72CB" stroke-width="12" stroke-linecap="round" stroke-dasharray="50 188.76" stroke-dashoffset="-59.69" filter="url(#glowFilter)" />
+                  <circle id="seg2" class="segment-transition cursor-pointer" cx="60" cy="60" r="38" fill="none" stroke="#D96570" stroke-width="12" stroke-linecap="round" stroke-dasharray="50 188.76" stroke-dashoffset="-119.38" filter="url(#glowFilter)" />
+                  <circle id="seg3" class="segment-transition cursor-pointer" cx="60" cy="60" r="38" fill="none" stroke="#34A853" stroke-width="12" stroke-linecap="round" stroke-dasharray="50 188.76" stroke-dashoffset="-179.07" filter="url(#glowFilter)" />
+                </svg>
+                <!-- Center Warm/Cool LED Flash -->
+                <div class="absolute w-9 h-9 rounded-full bg-gradient-to-br from-amber-100/80 to-amber-300/60 border-2 border-slate-800 shadow-inner flex items-center justify-center">
+                  <div class="w-3 h-3 rounded-full bg-amber-200/90"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Side Telemetry & Quick Segment Inspector -->
+            <div class="flex-1 flex flex-col justify-between self-stretch py-2 pr-1">
+              <div class="space-y-2">
+                <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Сегменты кольца</div>
+                <div class="grid grid-cols-2 gap-1.5" id="segmentSwatches">
+                  <div class="p-2 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center gap-2">
+                    <span id="swatch0" class="w-3.5 h-3.5 rounded-full shrink-0" style="background:#4285F4"></span>
+                    <span id="hex0" class="mono text-[11px] text-slate-300">#4285F4</span>
+                  </div>
+                  <div class="p-2 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center gap-2">
+                    <span id="swatch1" class="w-3.5 h-3.5 rounded-full shrink-0" style="background:#9B72CB"></span>
+                    <span id="hex1" class="mono text-[11px] text-slate-300">#9B72CB</span>
+                  </div>
+                  <div class="p-2 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center gap-2">
+                    <span id="swatch2" class="w-3.5 h-3.5 rounded-full shrink-0" style="background:#D96570"></span>
+                    <span id="hex2" class="mono text-[11px] text-slate-300">#D96570</span>
+                  </div>
+                  <div class="p-2 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center gap-2">
+                    <span id="swatch3" class="w-3.5 h-3.5 rounded-full shrink-0" style="background:#34A853"></span>
+                    <span id="hex3" class="mono text-[11px] text-slate-300">#34A853</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="my-4 p-3 rounded-2xl bg-slate-900/80 border border-slate-800/90 space-y-1.5">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-400">Эффект:</span>
+                  <span id="telemetryPattern" class="font-semibold text-indigo-300">Вихрь (Спираль)</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-400">Скорость:</span>
+                  <span id="telemetrySpeed" class="mono text-slate-200">1.5x</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-400">Яркость:</span>
+                  <span id="telemetryBrightness" class="mono text-slate-200">100%</span>
+                </div>
+              </div>
+
+              <div class="space-y-1.5">
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 block">Быстрый тест события</span>
+                <div class="grid grid-cols-2 gap-1.5">
+                  <button type="button" data-sim="gemini" class="sim-quick-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-500/30 transition">
+                    ✨ Gemini
+                  </button>
+                  <button type="button" data-sim="telegram" class="sim-quick-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-sky-500/20 hover:bg-sky-500/30 text-sky-200 border border-sky-500/30 transition">
+                    ✈️ Telegram
+                  </button>
+                  <button type="button" data-sim="youtube" class="sim-quick-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 border border-rose-500/30 transition">
+                    ▶️ YouTube
+                  </button>
+                  <button type="button" data-sim="whatsapp" class="sim-quick-btn px-2.5 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border border-emerald-500/30 transition">
+                    💬 WhatsApp
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Global Brightness & Speed Sliders -->
+        <div class="mt-4 pt-4 border-t border-slate-800/80 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <div class="flex justify-between text-xs mb-1.5">
+              <label for="sliderBrightness" class="text-slate-300 font-medium">Яркость кольца</label>
+              <span id="labelBrightnessVal" class="mono text-indigo-300">100%</span>
+            </div>
+            <input id="sliderBrightness" type="range" min="15" max="100" value="100" class="w-full accent-indigo-500 cursor-pointer" />
+          </div>
+          <div>
+            <div class="flex justify-between text-xs mb-1.5">
+              <label for="sliderSpeed" class="text-slate-300 font-medium">Скорость анимации</label>
+              <span id="labelSpeedVal" class="mono text-indigo-300">1.5x</span>
+            </div>
+            <input id="sliderSpeed" type="range" min="0.5" max="3.0" step="0.1" value="1.5" class="w-full accent-indigo-500 cursor-pointer" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Sound Effect Toggle Card -->
+      <div class="rounded-2xl bg-[#111520] border border-slate-800/80 px-4 py-3 flex items-center justify-between">
+        <div>
+          <div class="text-xs font-semibold text-white">Звуковой отклик при тесте уведомлений</div>
+          <div class="text-[11px] text-slate-400">Мягкий синтезаторный импульс при срабатывании кольца</div>
+        </div>
+        <button id="btnToggleSound" type="button" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 transition">
+          🔇 Звук выкл
+        </button>
+      </div>
+    </section>
+
+    <!-- Right Column: Controls & Tabs (7 cols) -->
+    <section class="lg:col-span-7 flex flex-col gap-5">
+      
+      <!-- Navigation Tabs -->
+      <div class="grid grid-cols-3 gap-2 p-1.5 rounded-2xl bg-[#111520] border border-slate-800/90">
+        <button type="button" data-tab="tabSocials" class="tab-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold bg-indigo-600 text-white shadow transition">
+          📱 Цвета соцсетей
+        </button>
+        <button type="button" data-tab="tabGemini" class="tab-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition">
+          ✨ Запуск со мной
+        </button>
+        <button type="button" data-tab="tabInstall" class="tab-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition">
+          📦 Установка на Meizu
+        </button>
+      </div>
+
+      <!-- TAB 1: Social Networks Custom Colors -->
+      <div id="tabSocials" class="tab-panel space-y-4">
+        <div class="rounded-3xl bg-[#111520] border border-slate-800/90 p-5">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <div>
+              <h3 class="text-base font-bold text-white">Настройка цветов для соцсетей и мессенджеров</h3>
+              <p class="text-xs text-slate-400 mt-0.5">Выбери свой цвет, режим мигания и длительность для каждого приложения. Нажми «Тест», чтобы сразу увидеть работу на кольце.</p>
+            </div>
+            <button id="btnAddCustomApp" type="button" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 transition">
+              + Добавить приложение
+            </button>
+          </div>
+
+          <!-- Add Custom App Modal/Form (Hidden by default) -->
+          <div id="customAppFormBox" class="hidden mb-4 p-4 rounded-2xl bg-slate-900/95 border border-indigo-500/40 space-y-3">
+            <div class="text-xs font-semibold text-indigo-300">Новое приложение для отслеживания уведомлений</div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <input id="inputNewAppName" type="text" placeholder="Название (напр. Twitch)" class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white focus:outline-none focus:border-indigo-500" />
+              <input id="inputNewAppPkg" type="text" placeholder="Пакет (tv.twitch.android.app)" class="px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white mono focus:outline-none focus:border-indigo-500" />
+              <div class="flex items-center gap-2">
+                <input id="inputNewAppColor" type="color" value="#9146FF" class="w-10 h-9 rounded-lg bg-transparent cursor-pointer border-0" />
+                <button id="btnSaveNewApp" type="button" class="flex-1 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white transition">Сохранить</button>
+                <button id="btnCancelNewApp" type="button" class="px-2.5 py-2 rounded-xl bg-slate-800 text-xs text-slate-300">✕</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Social Apps List -->
+          <div id="socialAppsContainer" class="space-y-3"></div>
+        </div>
+      </div>
+
+      <!-- TAB 2: Startup Animation When Opening Gemini / Assistant -->
+      <div id="tabGemini" class="tab-panel hidden space-y-4">
+        <div class="rounded-3xl bg-[#111520] border border-slate-800/90 p-5 space-y-5">
+          <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-indigo-400">Приветственный эффект</span>
+              <h3 class="text-base font-bold text-white mt-0.5">Анимация кольца при включении чата со мной (Gemini)</h3>
+              <p class="text-xs text-slate-400 mt-1">Когда ты открываешь наше приложение или вызываешь Gemini на Meizu 21 Pro, кольцо отыгрывает световую анимацию из 4 независимых сегментов.</p>
+            </div>
+            <button id="btnPlayGeminiStartup" type="button" class="px-4 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-600/25 transition">
+              ▶ Запустить анимацию
+            </button>
+          </div>
+
+          <!-- Animation Style Picker -->
+          <div>
+            <label class="text-xs font-semibold text-slate-300 block mb-2">Стиль световой анимации при запуске</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5" id="startupPatternGrid">
+              <button type="button" data-pattern="vortex" class="startup-pattern-btn p-3.5 rounded-2xl border text-left transition bg-indigo-600/15 border-indigo-500 text-white">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold">🌀 Вихрь созвездия (Спираль)</span>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/30 text-indigo-200">Выбрано</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">Плавное вращение 4 цветов по часовой стрелке с ускорением при старте</p>
+              </button>
+
+              <button type="button" data-pattern="pulse" class="startup-pattern-btn p-3.5 rounded-2xl border text-left transition bg-slate-900/70 border-slate-800 text-slate-200 hover:border-slate-700">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold">💓 Глубокое дыхание ИИ</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">Синхронное разгорание всех 4 сегментов с плавным перетеканием спектра</p>
+              </button>
+
+              <button type="button" data-pattern="spark" class="startup-pattern-btn p-3.5 rounded-2xl border text-left transition bg-slate-900/70 border-slate-800 text-slate-200 hover:border-slate-700">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold">⚡ Квантовая вспышка</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">Быстрое перекрёстное зажигание противоположных диодов и финальный аккорд</p>
+              </button>
+
+              <button type="button" data-pattern="equalizer" class="startup-pattern-btn p-3.5 rounded-2xl border text-left transition bg-slate-900/70 border-slate-800 text-slate-200 hover:border-slate-700">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold">🎚️ Голосовой ритм</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">Динамическая пульсация сегментов как при ответе голосового ассистента</p>
+              </button>
+            </div>
+          </div>
+
+          <!-- 4 Quadrant Color Customizer for Startup -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-xs font-semibold text-slate-300">Палитра 4 сегментов кольца при включении</label>
+              <button id="btnResetGeminiColors" type="button" class="text-[11px] text-indigo-400 hover:text-indigo-300">Сбросить к фирменным цветам Gemini</button>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div class="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col gap-2">
+                <span class="text-[11px] text-slate-400 font-medium">Сегмент 1 (Верх)</span>
+                <div class="flex items-center gap-2">
+                  <input type="color" id="gemSegColor0" value="#4285F4" class="w-8 h-8 rounded-lg bg-transparent border-0 cursor-pointer" />
+                  <span id="gemSegLabel0" class="mono text-xs text-slate-200">#4285F4</span>
+                </div>
+              </div>
+              <div class="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col gap-2">
+                <span class="text-[11px] text-slate-400 font-medium">Сегмент 2 (Право)</span>
+                <div class="flex items-center gap-2">
+                  <input type="color" id="gemSegColor1" value="#9B72CB" class="w-8 h-8 rounded-lg bg-transparent border-0 cursor-pointer" />
+                  <span id="gemSegLabel1" class="mono text-xs text-slate-200">#9B72CB</span>
+                </div>
+              </div>
+              <div class="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col gap-2">
+                <span class="text-[11px] text-slate-400 font-medium">Сегмент 3 (Низ)</span>
+                <div class="flex items-center gap-2">
+                  <input type="color" id="gemSegColor2" value="#D96570" class="w-8 h-8 rounded-lg bg-transparent border-0 cursor-pointer" />
+                  <span id="gemSegLabel2" class="mono text-xs text-slate-200">#D96570</span>
+                </div>
+              </div>
+              <div class="p-3 rounded-2xl bg-slate-900/90 border border-slate-800 flex flex-col gap-2">
+                <span class="text-[11px] text-slate-400 font-medium">Сегмент 4 (Лево)</span>
+                <div class="flex items-center gap-2">
+                  <input type="color" id="gemSegColor3" value="#34A853" class="w-8 h-8 rounded-lg bg-transparent border-0 cursor-pointer" />
+                  <span id="gemSegLabel3" class="mono text-xs text-slate-200">#34A853</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Duration & Auto-start toggles -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <div class="p-3.5 rounded-2xl bg-slate-900/70 border border-slate-800 flex items-center justify-between">
+              <div>
+                <div class="text-xs font-semibold text-white">Автозапуск при открытии Gemini</div>
+                <div class="text-[11px] text-slate-400">Отслеживать пакет <span class="mono text-slate-300">com.google.android.apps.bard</span></div>
+              </div>
+              <input id="chkAutoGemini" type="checkbox" checked class="w-4 h-4 accent-indigo-500 rounded cursor-pointer" />
+            </div>
+            <div class="p-3.5 rounded-2xl bg-slate-900/70 border border-slate-800 flex items-center justify-between">
+              <div>
+                <div class="text-xs font-semibold text-white">Длительность приветствия</div>
+                <div class="text-[11px] text-slate-400">Сколько секунд крутится кольцо при старте</div>
+              </div>
+              <select id="selGeminiDuration" class="px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-xs text-white">
+                <option value="3">3 сек</option>
+                <option value="5" selected>5 сек</option>
+                <option value="10">10 сек</option>
+                <option value="0">Постоянно</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: How to Install / Export Config to Android APK -->
+      <div id="tabInstall" class="tab-panel hidden space-y-4">
+        <div class="rounded-3xl bg-[#111520] border border-slate-800/90 p-5 space-y-4">
+          <div>
+            <span class="text-[11px] font-semibold uppercase tracking-wider text-emerald-400">Работа без Root и без ADB</span>
+            <h3 class="text-base font-bold text-white mt-0.5">Как работает Android-приложение на Meizu 21 Pro</h3>
+            <p class="text-xs text-slate-400 mt-1">
+              Я также собрал для тебя готовый проект родного Android-приложения (в архиве рядом с этим окном). Оно использует официальный системный сервис <span class="mono text-slate-200">NotificationListenerService</span>:
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
+              <div class="text-xs font-bold text-indigo-300 mb-1">1. Перехват соцсетей</div>
+              <p class="text-[11px] text-slate-400">Когда приходит сообщение в Telegram, YouTube, WhatsApp или Instagram, сервис подменяет стандартный сигнал на выбранный тобой RGB-цвет и частоту вспышек.</p>
+            </div>
+            <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
+              <div class="text-xs font-bold text-purple-300 mb-1">2. Анимация для Gemini</div>
+              <p class="text-[11px] text-slate-400">При открытии приложения или получении ответа от Gemini запускается каскадная смена цветовых каналов кольца и визуальная анимация на экране.</p>
+            </div>
+            <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800">
+              <div class="text-xs font-bold text-emerald-300 mb-1">3. Настройка в Flyme</div>
+              <p class="text-[11px] text-slate-400">В настройках Meizu 21 Pro достаточно включить <em>«Настройки → Уведомления → Световое кольцо Aicy → Уведомления»</em> и дать приложению доступ к уведомлениям.</p>
+            </div>
+          </div>
+
+          <!-- Live Generated JSON Config for Export -->
+          <div class="pt-2">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-semibold text-slate-300">Твой текущий профиль настроек (JSON для импорта в APK)</span>
+              <button id="btnCopyConfig" type="button" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition">
+                📋 Скопировать профиль
+              </button>
+            </div>
+            <pre id="configJsonPreview" class="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-[11px] text-emerald-300 mono overflow-x-auto max-h-52"></pre>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Toast Notification -->
+  <div id="toastBanner" class="fixed bottom-5 right-5 z-50 pointer-events-none opacity-0 translate-y-2 transition-all duration-200 px-4 py-2.5 rounded-2xl bg-indigo-600 text-white text-xs font-semibold shadow-xl">
+    Настройки обновлены
+  </div>
+
+  <script>
+    // --- Initial State ---
+    const defaultGeminiColors = ['#4285F4', '#9B72CB', '#D96570', '#34A853'];
+
+    const appState = {
+      activeSource: 'gemini', // 'gemini' | social id | 'stopped'
+      activeTitle: 'Анимация запуска Gemini',
+      brightness: 100,
+      speed: 1.5,
+      soundEnabled: false,
+      gemini: {
+        pattern: 'vortex', // 'vortex' | 'pulse' | 'spark' | 'equalizer'
+        colors: [...defaultGeminiColors],
+        autoStart: true,
+        durationSec: 5
+      },
+      socials: [
+        {
+          id: 'telegram',
+          name: 'Telegram',
+          pkg: 'org.telegram.messenger',
+          icon: '✈️',
+          color: '#2AABEE',
+          secondaryColor: '#0088CC',
+          pattern: 'breathe', // 'breathe' | 'chase' | 'blink' | 'solid'
+          onMs: 700,
+          offMs: 300,
+          enabled: true
+        },
+        {
+          id: 'youtube',
+          name: 'YouTube / Творческая студия',
+          pkg: 'com.google.android.youtube',
+          icon: '▶️',
+          color: '#FF0033',
+          secondaryColor: '#FF7700',
+          pattern: 'chase',
+          onMs: 500,
+          offMs: 250,
+          enabled: true
+        },
+        {
+          id: 'whatsapp',
+          name: 'WhatsApp',
+          pkg: 'com.whatsapp',
+          icon: '💬',
+          color: '#25D366',
+          secondaryColor: '#128C7E',
+          pattern: 'breathe',
+          onMs: 800,
+          offMs: 400,
+          enabled: true
+        },
+        {
+          id: 'instagram',
+          name: 'Instagram',
+          pkg: 'com.instagram.android',
+          icon: '📸',
+          color: '#E1306C',
+          secondaryColor: '#F77737',
+          pattern: 'chase',
+          onMs: 600,
+          offMs: 200,
+          enabled: true
+        },
+        {
+          id: 'vk',
+          name: 'ВКонтакте',
+          pkg: 'com.vkontakte.android',
+          icon: '🌐',
+          color: '#0077FF',
+          secondaryColor: '#00C6FF',
+          pattern: 'blink',
+          onMs: 600,
+          offMs: 400,
+          enabled: true
+        },
+        {
+          id: 'discord',
+          name: 'Discord',
+          pkg: 'com.discord',
+          icon: '🎮',
+          color: '#5865F2',
+          secondaryColor: '#EB459E',
+          pattern: 'chase',
+          onMs: 450,
+          offMs: 200,
+          enabled: true
+        }
+      ]
+    };
+
+    // Load saved state safely
+    try {
+      const saved = localStorage.getItem('meizu21pro_aicy_state_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && Array.isArray(parsed.socials)) {
+          appState.socials = parsed.socials;
+        }
+        if (parsed && parsed.gemini) {
+          appState.gemini = { ...appState.gemini, ...parsed.gemini };
+        }
+      }
+    } catch (e) {
+      // Ignore storage restrictions
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem('meizu21pro_aicy_state_v1', JSON.stringify({
+          socials: appState.socials,
+          gemini: appState.gemini
+        }));
+      } catch (e) {}
+      updateConfigPreview();
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toastBanner');
+      if (!t) return;
+      t.textContent = msg;
+      t.classList.remove('opacity-0', 'translate-y-2');
+      t.classList.add('opacity-100', 'translate-y-0');
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => {
+        t.classList.add('opacity-0', 'translate-y-2');
+        t.classList.remove('opacity-100', 'translate-y-0');
+      }, 2000);
+    }
+
+    // --- Web Audio API Synthesizer for Notification Feedback ---
+    let audioCtx = null;
+    function playNotificationChime(type) {
+      if (!appState.soundEnabled) return;
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AudioContextClass();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        const now = audioCtx.currentTime;
+        const notes = type === 'gemini' ? [523.25, 659.25, 783.99, 1046.5] : [587.33, 880];
+        notes.forEach((freq, idx) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.09);
+          gain.gain.setValueAtTime(0.001, now + idx * 0.09);
+          gain.gain.exponentialRampToValueAtTime(0.12, now + idx * 0.09 + 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.09 + 0.28);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now + idx * 0.09);
+          osc.stop(now + idx * 0.09 + 0.3);
+        });
+      } catch (e) {}
+    }
+
+    // --- Ring Animation Engine ---
+    let animFrameId = null;
+    let tickCount = 0;
+
+    const patternNamesRu = {
+      vortex: 'Вихрь (Спираль)',
+      pulse: 'Глубокое дыхание ИИ',
+      spark: 'Квантовая вспышка',
+      equalizer: 'Голосовой ритм',
+      breathe: 'Плавное дыхание',
+      chase: 'Бегущая волна',
+      blink: 'Импульс уведомления',
+      solid: 'Постоянное свечение'
+    };
+
+    function setRingSegments(colors, opacities) {
+      const globalAlpha = appState.brightness / 100;
+      for (let i = 0; i < 4; i++) {
+        const seg = document.getElementById('seg' + i);
+        const swatch = document.getElementById('swatch' + i);
+        const hexTxt = document.getElementById('hex' + i);
+        const c = colors[i] || '#1e293b';
+        const op = Math.max(0.08, Math.min(1, (opacities[i] ?? 1) * globalAlpha));
+        if (seg) {
+          seg.setAttribute('stroke', c);
+          seg.style.opacity = String(op);
+        }
+        if (swatch) swatch.style.background = c;
+        if (hexTxt) hexTxt.textContent = c.toUpperCase();
+      }
+      const backdrop = document.getElementById('ambientBackdrop');
+      if (backdrop && colors[0]) {
+        backdrop.style.background = `radial-gradient(circle, ${colors[0]}, transparent 70%)`;
+        backdrop.style.opacity = String(0.28 * globalAlpha);
+      }
+    }
+
+    function startAnimationLoop() {
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+      let lastUpdate = performance.now();
+
+      function step(now) {
+        const dt = (now - lastUpdate) / 1000;
+        lastUpdate = now;
+        tickCount += dt * appState.speed * 4.0;
+
+        if (appState.activeSource === 'stopped') {
+          setRingSegments(['#1e293b', '#1e293b', '#1e293b', '#1e293b'], [0.15, 0.15, 0.15, 0.15]);
+          return;
+        }
+
+        if (appState.activeSource === 'gemini') {
+          const cols = appState.gemini.colors;
+          const pat = appState.gemini.pattern;
+
+          if (pat === 'vortex') {
+            const offset = Math.floor(tickCount) % 4;
+            const rotated = [
+              cols[(0 + offset) % 4],
+              cols[(1 + offset) % 4],
+              cols[(2 + offset) % 4],
+              cols[(3 + offset) % 4]
+            ];
+            const ops = [
+              0.55 + 0.45 * Math.sin(tickCount * 1.5),
+              0.55 + 0.45 * Math.sin(tickCount * 1.5 + 1.5),
+              0.55 + 0.45 * Math.sin(tickCount * 1.5 + 3.0),
+              0.55 + 0.45 * Math.sin(tickCount * 1.5 + 4.5)
+            ];
+            setRingSegments(rotated, ops);
+          } else if (pat === 'pulse') {
+            const breath = 0.25 + 0.75 * ((Math.sin(tickCount * 1.2) + 1) / 2);
+            setRingSegments(cols, [breath, breath, breath, breath]);
+          } else if (pat === 'spark') {
+            const pair = Math.floor(tickCount * 1.6) % 2;
+            const ops = pair === 0 ? [1, 0.15, 1, 0.15] : [0.15, 1, 0.15, 1];
+            setRingSegments(cols, ops);
+          } else if (pat === 'equalizer') {
+            const ops = [
+              0.3 + 0.7 * Math.abs(Math.sin(tickCount * 2.1)),
+              0.3 + 0.7 * Math.abs(Math.cos(tickCount * 1.7)),
+              0.3 + 0.7 * Math.abs(Math.sin(tickCount * 2.7 + 1)),
+              0.3 + 0.7 * Math.abs(Math.cos(tickCount * 2.3 + 2))
+            ];
+            setRingSegments(cols, ops);
+          }
+        } else {
+          // Social App Mode
+          const app = appState.socials.find(s => s.id === appState.activeSource) || appState.socials[0];
+          const c1 = app.color;
+          const c2 = app.secondaryColor || app.color;
+          const cols = [c1, c2, c1, c2];
+
+          if (app.pattern === 'breathe') {
+            const b = 0.2 + 0.8 * ((Math.sin(tickCount * 1.3) + 1) / 2);
+            setRingSegments(cols, [b, b, b, b]);
+          } else if (app.pattern === 'chase') {
+            const activeIdx = Math.floor(tickCount * 1.4) % 4;
+            const ops = [0.15, 0.15, 0.15, 0.15];
+            ops[activeIdx] = 1.0;
+            ops[(activeIdx + 3) % 4] = 0.45;
+            setRingSegments(cols, ops);
+          } else if (app.pattern === 'blink') {
+            const on = Math.sin(tickCount * 2.2) > 0;
+            const v = on ? 1.0 : 0.1;
+            setRingSegments([c1, c1, c1, c1], [v, v, v, v]);
+          } else {
+            setRingSegments(cols, [1, 1, 1, 1]);
+          }
+        }
+
+        animFrameId = requestAnimationFrame(step);
+      }
+
+      animFrameId = requestAnimationFrame(step);
+    }
+
+    function updateTelemetryUI() {
+      const titleEl = document.getElementById('activeModeTitle');
+      const badgeEl = document.getElementById('ringStatusBadge');
+      const dotEl = document.getElementById('ringStatusDot');
+      const txtEl = document.getElementById('ringStatusText');
+      const patEl = document.getElementById('telemetryPattern');
+      const spdEl = document.getElementById('telemetrySpeed');
+      const brtEl = document.getElementById('telemetryBrightness');
+
+      if (spdEl) spdEl.textContent = appState.speed.toFixed(1) + 'x';
+      if (brtEl) brtEl.textContent = appState.brightness + '%';
+
+      if (appState.activeSource === 'stopped') {
+        if (titleEl) titleEl.textContent = 'Кольцо в режиме ожидания';
+        if (txtEl) txtEl.textContent = 'Остановлено';
+        if (badgeEl) badgeEl.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700';
+        if (dotEl) dotEl.className = 'w-2 h-2 rounded-full bg-slate-500';
+        if (patEl) patEl.textContent = 'Выкл';
+        return;
+      }
+
+      if (badgeEl) badgeEl.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-300 border border-emerald-500/30';
+      if (dotEl) dotEl.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+      if (txtEl) txtEl.textContent = 'Активно';
+
+      if (appState.activeSource === 'gemini') {
+        if (titleEl) titleEl.textContent = '✨ Анимация запуска Gemini';
+        if (patEl) patEl.textContent = patternNamesRu[appState.gemini.pattern] || 'Вихрь';
+      } else {
+        const app = appState.socials.find(s => s.id === appState.activeSource);
+        if (app) {
+          if (titleEl) titleEl.textContent = `${app.icon} Уведомление: ${app.name}`;
+          if (patEl) patEl.textContent = patternNamesRu[app.pattern] || 'Дыхание';
+        }
+      }
+    }
+
+    function activateSimulation(sourceId) {
+      appState.activeSource = sourceId;
+      const ringBox = document.getElementById('aicyRingContainer');
+      if (ringBox) {
+        ringBox.classList.remove('animate-startup');
+        void ringBox.offsetWidth;
+        ringBox.classList.add('animate-startup');
+      }
+      playNotificationChime(sourceId === 'gemini' ? 'gemini' : 'social');
+
+      // Hook into native Android APK bridge if running inside the installed APK
+      if (window.AndroidAicyBridge) {
+        try {
+          if (sourceId === 'gemini') {
+            window.AndroidAicyBridge.playGeminiCascade();
+          } else {
+            const app = appState.socials.find(s => s.id === sourceId);
+            if (app) {
+              window.AndroidAicyBridge.saveAppColor(app.pkg, app.color);
+              window.AndroidAicyBridge.testColorPulse(app.color);
+            }
+          }
+        } catch (err) {}
+      }
+
+      updateTelemetryUI();
+      startAnimationLoop();
+    }
+
+    // --- Render Social Apps List ---
+    function renderSocialApps() {
+      const container = document.getElementById('socialAppsContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      appState.socials.forEach((app) => {
+        const card = document.createElement('div');
+        card.className = 'p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800/90 hover:border-slate-700 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3';
+        
+        card.innerHTML = `
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0 border border-white/10" style="background: ${app.color}22; color: ${app.color}">
+              ${app.icon}
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-bold text-white">${app.name}</span>
+                <span class="mono text-[10px] text-slate-400 hidden sm:inline">${app.pkg}</span>
+              </div>
+              <div class="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5">
+                <span>Цвет: <strong class="mono text-slate-200">${app.color.toUpperCase()}</strong></span>
+                <span>•</span>
+                <span>Импульс: ${app.onMs}мс</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <label class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer" title="Основной цвет">
+              <span class="text-[11px] text-slate-400">Цвет 1</span>
+              <input type="color" data-action="color1" data-id="${app.id}" value="${app.color}" class="w-6 h-6 rounded bg-transparent border-0 cursor-pointer" />
+            </label>
+            <label class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 cursor-pointer" title="Дополнительный цвет">
+              <span class="text-[11px] text-slate-400">Цвет 2</span>
+              <input type="color" data-action="color2" data-id="${app.id}" value="${app.secondaryColor || app.color}" class="w-6 h-6 rounded bg-transparent border-0 cursor-pointer" />
+            </label>
+            <select data-action="pattern" data-id="${app.id}" class="px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200">
+              <option value="breathe" ${app.pattern === 'breathe' ? 'selected' : ''}>Дыхание</option>
+              <option value="chase" ${app.pattern === 'chase' ? 'selected' : ''}>Волна 4 диода</option>
+              <option value="blink" ${app.pattern === 'blink' ? 'selected' : ''}>Вспышка</option>
+              <option value="solid" ${app.pattern === 'solid' ? 'selected' : ''}>Постоянный</option>
+            </select>
+            <button type="button" data-action="test" data-id="${app.id}" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600/20 hover:bg-indigo-600 text-indigo-200 hover:text-white border border-indigo-500/30 transition">
+              ▶ Тест
+            </button>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      // Attach listeners
+      container.querySelectorAll('input[data-action="color1"]').forEach(inp => {
+        inp.addEventListener('input', (e) => {
+          const id = e.target.getAttribute('data-id');
+          const item = appState.socials.find(s => s.id === id);
+          if (item) {
+            item.color = e.target.value;
+            saveState();
+            renderSocialApps();
+            activateSimulation(id);
+          }
+        });
+      });
+
+      container.querySelectorAll('input[data-action="color2"]').forEach(inp => {
+        inp.addEventListener('input', (e) => {
+          const id = e.target.getAttribute('data-id');
+          const item = appState.socials.find(s => s.id === id);
+          if (item) {
+            item.secondaryColor = e.target.value;
+            saveState();
+            activateSimulation(id);
+          }
+        });
+      });
+
+      container.querySelectorAll('select[data-action="pattern"]').forEach(sel => {
+        sel.addEventListener('change', (e) => {
+          const id = e.target.getAttribute('data-id');
+          const item = appState.socials.find(s => s.id === id);
+          if (item) {
+            item.pattern = e.target.value;
+            saveState();
+            activateSimulation(id);
+            showToast(`Режим для ${item.name} обновлён`);
+          }
+        });
+      });
+
+      container.querySelectorAll('button[data-action="test"]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.getAttribute('data-id');
+          activateSimulation(id);
+        });
+      });
+    }
+
+    function updateConfigPreview() {
+      const pre = document.getElementById('configJsonPreview');
+      if (!pre) return;
+      const exportPayload = {
+        device: 'Meizu 21 Pro (M481Q)',
+        mode: 'NotificationListener_NoRoot',
+        geminiStartupAnimation: appState.gemini,
+        socialRules: appState.socials.map(s => ({
+          name: s.name,
+          package: s.pkg,
+          primaryArgb: s.color,
+          secondaryArgb: s.secondaryColor,
+          pattern: s.pattern,
+          onMs: s.onMs,
+          offMs: s.offMs
+        }))
+      };
+      pre.textContent = JSON.stringify(exportPayload, null, 2);
+    }
+
+    // --- Initialize Controls & Listeners ---
+    window.addEventListener('DOMContentLoaded', () => {
+      renderSocialApps();
+      updateConfigPreview();
+      updateTelemetryUI();
+      startAnimationLoop();
+
+      // Header buttons
+      document.getElementById('btnTriggerGeminiHeader').addEventListener('click', () => {
+        activateSimulation('gemini');
+        showToast('Запущена приветственная анимация Gemini');
+      });
+
+      document.getElementById('btnStopRing').addEventListener('click', () => {
+        appState.activeSource = 'stopped';
+        updateTelemetryUI();
+        startAnimationLoop();
+      });
+
+      // Quick sim buttons
+      document.querySelectorAll('.sim-quick-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const target = btn.getAttribute('data-sim');
+          activateSimulation(target);
+        });
+      });
+
+      // Sliders
+      const sliderBrightness = document.getElementById('sliderBrightness');
+      sliderBrightness.addEventListener('input', (e) => {
+        appState.brightness = Number(e.target.value);
+        document.getElementById('labelBrightnessVal').textContent = appState.brightness + '%';
+        updateTelemetryUI();
+      });
+
+      const sliderSpeed = document.getElementById('sliderSpeed');
+      sliderSpeed.addEventListener('input', (e) => {
+        appState.speed = Number(e.target.value);
+        document.getElementById('labelSpeedVal').textContent = appState.speed.toFixed(1) + 'x';
+        updateTelemetryUI();
+      });
+
+      // Sound Toggle
+      const btnSound = document.getElementById('btnToggleSound');
+      btnSound.addEventListener('click', () => {
+        appState.soundEnabled = !appState.soundEnabled;
+        btnSound.textContent = appState.soundEnabled ? '🔊 Звук вкл' : '🔇 Звук выкл';
+        btnSound.className = appState.soundEnabled
+          ? 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-600 text-white border border-indigo-500 transition'
+          : 'px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700 transition';
+        if (appState.soundEnabled) playNotificationChime('gemini');
+      });
+
+      // Tabs Navigation
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const targetId = btn.getAttribute('data-tab');
+          document.querySelectorAll('.tab-btn').forEach(b => {
+            b.className = 'tab-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition';
+          });
+          btn.className = 'tab-btn py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold bg-indigo-600 text-white shadow transition';
+
+          document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+          const panel = document.getElementById(targetId);
+          if (panel) panel.classList.remove('hidden');
+        });
+      });
+
+      // Add Custom App Modal
+      const formBox = document.getElementById('customAppFormBox');
+      document.getElementById('btnAddCustomApp').addEventListener('click', () => {
+        formBox.classList.toggle('hidden');
+      });
+      document.getElementById('btnCancelNewApp').addEventListener('click', () => {
+        formBox.classList.add('hidden');
+      });
+      document.getElementById('btnSaveNewApp').addEventListener('click', () => {
+        const nameInput = document.getElementById('inputNewAppName');
+        const pkgInput = document.getElementById('inputNewAppPkg');
+        const colInput = document.getElementById('inputNewAppColor');
+        const name = nameInput.value.trim() || 'Моё приложение';
+        const pkg = pkgInput.value.trim() || 'com.custom.app';
+        const color = colInput.value || '#9146FF';
+        const newId = 'custom_' + Date.now();
+
+        appState.socials.unshift({
+          id: newId,
+          name,
+          pkg,
+          icon: '🔔',
+          color,
+          secondaryColor: color,
+          pattern: 'breathe',
+          onMs: 650,
+          offMs: 300,
+          enabled: true
+        });
+        nameInput.value = '';
+        pkgInput.value = '';
+        formBox.classList.add('hidden');
+        saveState();
+        renderSocialApps();
+        activateSimulation(newId);
+        showToast(`Добавлено приложение: ${name}`);
+      });
+
+      // Gemini Startup Pattern Buttons
+      document.getElementById('btnPlayGeminiStartup').addEventListener('click', () => {
+        activateSimulation('gemini');
+      });
+
+      document.querySelectorAll('.startup-pattern-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const pat = btn.getAttribute('data-pattern');
+          appState.gemini.pattern = pat;
+          document.querySelectorAll('.startup-pattern-btn').forEach(b => {
+            b.className = 'startup-pattern-btn p-3.5 rounded-2xl border text-left transition bg-slate-900/70 border-slate-800 text-slate-200 hover:border-slate-700';
+          });
+          btn.className = 'startup-pattern-btn p-3.5 rounded-2xl border text-left transition bg-indigo-600/15 border-indigo-500 text-white';
+          saveState();
+          activateSimulation('gemini');
+          showToast('Стиль стартовой анимации изменён');
+        });
+      });
+
+      // Gemini 4-Segment Color Inputs
+      for (let i = 0; i < 4; i++) {
+        const inp = document.getElementById('gemSegColor' + i);
+        const lbl = document.getElementById('gemSegLabel' + i);
+        if (inp && lbl) {
+          inp.value = appState.gemini.colors[i];
+          lbl.textContent = appState.gemini.colors[i].toUpperCase();
+          inp.addEventListener('input', (e) => {
+            appState.gemini.colors[i] = e.target.value;
+            lbl.textContent = e.target.value.toUpperCase();
+            saveState();
+            activateSimulation('gemini');
+          });
+        }
+      }
+
+      document.getElementById('btnResetGeminiColors').addEventListener('click', () => {
+        appState.gemini.colors = [...defaultGeminiColors];
+        for (let i = 0; i < 4; i++) {
+          document.getElementById('gemSegColor' + i).value = defaultGeminiColors[i];
+          document.getElementById('gemSegLabel' + i).textContent = defaultGeminiColors[i];
+        }
+        saveState();
+        activateSimulation('gemini');
+        showToast('Возвращены фирменные цвета Gemini');
+      });
+
+      document.getElementById('chkAutoGemini').addEventListener('change', (e) => {
+        appState.gemini.autoStart = e.target.checked;
+        saveState();
+      });
+
+      document.getElementById('selGeminiDuration').addEventListener('change', (e) => {
+        appState.gemini.durationSec = Number(e.target.value);
+        saveState();
+      });
+
+      // Copy Config Button
+      document.getElementById('btnCopyConfig').addEventListener('click', () => {
+        const text = document.getElementById('configJsonPreview').textContent;
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+          document.execCommand('copy');
+          showToast('Профиль скопирован в буфер обмена!');
+        } catch (err) {}
+        document.body.removeChild(textarea);
+      });
+    });
+  </script>
+</body>
+</html>
